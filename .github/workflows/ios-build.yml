@@ -1,0 +1,33 @@
+name: Business Document Sync iOS Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "App/**"
+      - "Config/**"
+      - "project.yml"
+      - ".github/workflows/document-sync-ci.yml"
+  pull_request:
+    paths:
+      - "DocumentSync/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate independent project
+        run: xcodegen generate
+      - name: Build app for iPhone Simulator without signing
+        run: |
+          xcodebuild build -project BusinessDocumentSync.xcodeproj -scheme BusinessDocumentSync -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO

@@ -7,10 +7,13 @@ on:
       - "App/**"
       - "Config/**"
       - "project.yml"
-      - ".github/workflows/document-sync-ci.yml"
+      - ".github/workflows/ios-build.yml"
   pull_request:
     paths:
-      - "DocumentSync/**"
+      - "App/**"
+      - "Config/**"
+      - "project.yml"
+      - ".github/workflows/ios-build.yml"
   workflow_dispatch:
 
 permissions:

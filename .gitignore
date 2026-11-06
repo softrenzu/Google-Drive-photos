@@ -2,3 +2,10 @@ Config/Secrets.xcconfig
 *.xcuserstate
 DerivedData/
 .build/
+
+# Generated iOS artifacts
+App/Assets.xcassets/AppIcon.appiconset/
+BusinessDocumentSync.xcodeproj/
+build/
+fastlane/report.xml
+fastlane/Preview.html

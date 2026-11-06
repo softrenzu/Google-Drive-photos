@@ -1,4 +1,4 @@
-name: Deploy web app to GitHub Pages
+name: Web app checks (hosted on Render)
 
 on:
   push:
@@ -11,21 +11,21 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
     steps:
       - uses: actions/checkout@v4
-      - run: node --check web/app.js
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
-      - uses: actions/deploy-pages@v4
+      - name: Validate JavaScript syntax
+        run: |
+          node --check web/app.js
+          node --check web/service-worker.js
+      - name: Validate web manifest
+        run: python3 -m json.tool web/manifest.webmanifest >/dev/null
+      - name: Verify required web assets
+        run: |
+          test -s web/index.html
+          test -s web/styles.css
+          test -s web/app.js
+          test -s web/manifest.webmanifest

@@ -2,7 +2,7 @@
 
 ## iPhoneでの操作
 
-1. GitHub Pagesで公開したWebアプリのURLをSafariで開く。
+1. Renderに公開したWebアプリのURLをSafariで開く。
 2. Google Cloudの**ウェブアプリケーション用OAuthクライアントID**を入力し、「Googleアカウントで連携する」を押す。シークレットキーは入力しない。
 3. 「写真ライブラリから選ぶ」→ 写真を選択 →「選んだ写真を判定」を押す。
 4. iPhone内で人物検出と日本語OCRを実行。書類候補のプレビューを確認し、「Google Driveに保存」を押す。
@@ -15,7 +15,7 @@
 1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) でプロジェクトを作成し、**Google Drive API** を有効にする。
 2. OAuth同意画面の設定を行う。公開前のテスト状態で使う場合、自分のGoogleアカウントをテストユーザーとして追加する。
 3. OAuthクライアントの種類を**「ウェブ アプリケーション」**にして作成する。
-4. **承認済みのJavaScript生成元**に `https://softrenzu.github.io` を追加する。パスを含めず、生成元だけ指定する。
+4. **承認済みのJavaScript生成元**に `https://rooomtech-business-document-sync.onrender.com` を追加する。パスを含めず、生成元だけ指定する。
 5. クライアントID（`12345-xxxxx.apps.googleusercontent.com`）をコピーしてWebアプリの設定欄へ貼り付ける。
 6. OAuthスコープは `https://www.googleapis.com/auth/drive.file`。ユーザーは自分のGoogleアカウントでログインする。
 7. Google OAuthクライアントの**シークレット**をWebアプリに貼り付けたり、GitHubへコミットしてはいけません。
@@ -23,7 +23,7 @@
 ## 安全設計
 
 - 画像を選択するまでWebアプリは写真ライブラリへアクセスできない。
-- Google Driveへの送信前にブラウザ内でCOCO-SSD人物検出とTesseract OCRを使う。モデルと日本語辞書はインターネット経由で読み込むが、写真画像を判定APIへアップロードしない。
+- Google Driveへの送信前にブラウザ内でCOCO-SSD人物検出・BlazeFace顔検出・Tesseract OCRを使う。モデルと日本語辞書はインターネット経由で読み込むが、写真画像を判定APIへアップロードしない。
 - 判定プログラムが読み込めない・エラーになる画像は送信しない。
 - 請求書など所定の語句が見つかり、人物が検出されなかった写真だけを候補にする。
 - 最後に**必ずユーザーがサムネイルを見て、送信を承認**する。
@@ -34,6 +34,13 @@
 - 初回に利用する人物判定モデル、OCRライブラリは外部CDNから読み込む。CDN障害時は判定不可・アップロード不可。
 
 ## 公開
+
+メイン公開先はRenderの静的Webサイト：
+
+`https://rooomtech-business-document-sync.onrender.com/`
+
+`web/`以下を公開し、GitHub main更新時に自動デプロイする。
+
 
 .github/workflows/web-pages.yml は`web/`ディレクトリをGitHub Pagesに公開する設定。GitHubリポジトリの **Settings → Pages → Build and deployment → Source → GitHub Actions** を選ぶ。実際の公開が終わるとアドレスは：
 

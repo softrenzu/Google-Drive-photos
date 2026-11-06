@@ -25,7 +25,7 @@
 
 ## 導入
 
-1. Macでこのリポジトリをチェックアウトし、ターミナルで `cd DocumentSync`
+1. Macでこのリポジトリをチェックアウトし、ターミナルでリポジトリのルートへ移動
 2. `cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig` を実行
 3. Google Cloud ConsoleでDrive APIを有効化し、OAuth同意画面を設定。iOSのBundle IDは `com.rooomtech.businessdocumentsync` と一致させる
 4. `Config/Secrets.xcconfig` に **iOS OAuthクライアントID**、**逆順クライアントID**、**Apple Team ID** を入力する。OAuthスコープは `https://www.googleapis.com/auth/drive.file` のみ

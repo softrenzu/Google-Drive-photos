@@ -1,0 +1,19 @@
+{
+  "name": "業務書類をGoogle Driveに保存",
+  "short_name": "書類保存",
+  "description": "業務書類だけを選んでGoogle Driveへ安全に保存",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#163e66",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

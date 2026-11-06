@@ -1,5 +1,8 @@
 # BusinessDocumentSync / iPhone業務書類自動保存
 
+**iPhoneへインストールする場合は [TestFlightによる導入手順](docs/INSTALL_IPHONE.md) を参照してください。** GitHub内のコードやシミュレーター用ビルドを直接iPhoneへインストールすることはできません。Apple Developerによる署名と配布設定が必要です。
+
+
 無料で使える個人用iOSアプリ。既存の商用RooomShotとは独立したXcodeGenプロジェクトです。サブスクリプション、外部AI API、広告SDKはありません。
 
 ## 機能
@@ -29,7 +32,7 @@
 2. `cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig` を実行
 3. Google Cloud ConsoleでDrive APIを有効化し、OAuth同意画面を設定。iOSのBundle IDは `com.rooomtech.businessdocumentsync` と一致させる
 4. `Config/Secrets.xcconfig` に **iOS OAuthクライアントID**、**逆順クライアントID**、**Apple Team ID** を入力する。OAuthスコープは `https://www.googleapis.com/auth/drive.file` のみ
-5. `xcodegen generate` を実行し `open BusinessDocumentSync.xcodeproj` で開く
+5. `swift scripts/generate_icon.swift`、`xcodegen generate` を順に実行し `open BusinessDocumentSync.xcodeproj` で開く
 6. Xcodeで開発チームを指定し、iPhoneを接続してビルド・実機実行
 7. 初回起動で「写真へのフルアクセス」を許可し、Googleアカウントにログイン。接続先を確認してから「自動同期」をON
 8. 「今すぐ検査」を押して動作を確認。Google Driveに `iPhone_Business_Documents` が作成される
@@ -47,7 +50,7 @@ iOS 26.1以降にはPhotoKitの新しいBackground Resource Upload Extensionが�
 - エラー時はアップロードせず、次の実行で再試行します。
 - iOSのVision検出には偽陰性があります。顔を含む書類も絶対にアップロードしない保証はできません。
 - Google側のOAuth設定やCloud費用規約はGoogleアカウントの設定に依存します。アプリ自体に課金処理はありません。
-- 現段階はソースコード提供であり、**iPhone実機ビルド・Google実アカウントへの送信試験は未実施**です。
+- GitHub ActionsのiOSシミュレーター用ビルドは成功しています。ただし**TestFlight実配布・iPhone実機インストール・Google実アカウントへの送信試験は未実施**です。
 
 ## 参考文書
 

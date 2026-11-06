@@ -6,9 +6,11 @@
 2. Google Cloudの**ウェブアプリケーション用OAuthクライアントID**を入力し、「Googleアカウントで連携する」を押す。シークレットキーは入力しない。
 3. 「写真ライブラリから選ぶ」→ 写真を選択 →「選んだ写真を判定」を押す。
 4. iPhone内で人物検出と日本語OCRを実行。書類候補のプレビューを確認し、「Google Driveに保存」を押す。
-5. Safari共有メニューの「ホーム画面に追加」でアイコンを置ける。
+5. 初回はSafariの共有メニューで**「ホーム画面に追加」→「Webアプリとして開く」をオン→「追加」**。ホーム画面に「書類保存」の専用アイコンが表示され、次からアイコンを1回タップして起動できます。アプリとして起動したときはSafariのアドレスバーを表示しません。
 
 **自動ライブラリ同期はできません。** iPhoneのSafari/PWAは写真ライブラリへのバックグラウンド全件アクセスを許可しておらず、写真の選択は毎回必要です。iOSネイティブ版とは機能が異なります。
+
+Appleのホーム画面への追加はブラウザから自動実行できないため、初回の追加操作だけは利用者が行う必要があります。追加後は毎回SafariでURLを探す必要はありません。
 
 ## Google Cloud設定（初回のみ）
 
@@ -42,11 +44,7 @@
 `web/`以下を公開し、GitHub main更新時に自動デプロイする。
 
 
-.github/workflows/web-pages.yml は`web/`ディレクトリをGitHub Pagesに公開する設定。GitHubリポジトリの **Settings → Pages → Build and deployment → Source → GitHub Actions** を選ぶ。実際の公開が終わるとアドレスは：
-
-`https://softrenzu.github.io/Google-Drive-photos/`
-
-ページが404の場合はまだGitHub Pagesが有効になっていないか、公開失敗です。公開まではURLが使えると断言しないでください。
+GitHub Pagesはこのリポジトリでは有効になっていないため、Web版はRenderに公開しています。
 
 ## 開発
 

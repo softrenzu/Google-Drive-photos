@@ -14,6 +14,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
   <script defer src="./app.js"></script>
 </head>
 <body>
@@ -37,7 +38,7 @@
       <p id="connection-status" class="status" role="status">未接続です</p>
       <details class="setup-help">
         <summary>クライアントIDを持っていない場合</summary>
-        <p>Google CloudでDrive APIを有効にして、OAuthクライアントの種類を「ウェブアプリケーション」にします。「承認済みのJavaScript生成元」には、このページのURLの <b>https://softrenzu.github.io</b> を登録してください。OAuthのテストユーザーにご自身のGoogleアカウントを追加します。</p>
+        <p>Google CloudでDrive APIを有効にして、OAuthクライアントの種類を「ウェブアプリケーション」にします。「承認済みのJavaScript生成元」には、このページのURLの <b>https://rooomtech-business-document-sync.onrender.com</b> を登録してください。OAuthのテストユーザーにご自身のGoogleアカウントを追加します。</p>
         <p><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">Google Cloudの認証情報を開く</a></p>
       </details>
     </section>
@@ -69,7 +70,7 @@
 
     <aside class="safety">
       <h2>プライバシーについて</h2>
-      <p>画像の文字認識と人物検出には、ブラウザ内で動作するライブラリを使用します。選択した写真は承認前にはGoogle Driveへ送信しません。顔写真や人物をAIが見逃す場合があります。人物・個人情報の流出を絶対に避けたい場合は、このツールを使用せず手動で選別してください。</p>
+      <p>画像の文字認識と人物検出には、ブラウザ内で動作するライブラリを使用します。選択した写真は承認前にはGoogle Driveへ送信しません。人物写真や印刷された顔をAIが見逃す場合があります。人物・個人情報の流出を絶対に避けたい場合は、このツールを使用せず手動で選別してください。</p>
       <p>初回は画像判定用のプログラムを読み込むため、通信と時間が必要です。このサイトは写真やGoogleのアクセストークンをサーバーへ保存しません。</p>
     </aside>
 

@@ -1,0 +1,167 @@
+name: Publish signed iPhone app to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_distribution:
+        description: "I have configured the Apple Developer app, signing profile, Google OAuth and GitHub secrets"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: inputs.confirm_distribution
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: testflight
+    steps:
+      - name: Check out app source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+
+      - name: Configure Ruby for fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Check required credentials exist
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in GOOGLE_CLIENT_ID GOOGLE_REVERSED_CLIENT_ID APPLE_TEAM_ID BUILD_CERTIFICATE_BASE64 P12_PASSWORD BUILD_PROVISION_PROFILE_BASE64 KEYCHAIN_PASSWORD ASC_KEY_ID ASC_ISSUER_ID ASC_API_KEY_BASE64; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error title=Missing configuration::Configure $key in this repository's GitHub Actions secrets"
+              exit 1
+            fi
+          done
+
+      - name: Install XcodeGen and create app project
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          swift scripts/generate_icon.swift
+          {
+            printf 'GOOGLE_CLIENT_ID = %s\n' "$GOOGLE_CLIENT_ID"
+            printf 'GOOGLE_REVERSED_CLIENT_ID = %s\n' "$GOOGLE_REVERSED_CLIENT_ID"
+            printf 'DEVELOPMENT_TEAM = %s\n' "$APPLE_TEAM_ID"
+          } > Config/Secrets.xcconfig
+          xcodegen generate
+
+      - name: Install Apple Distribution certificate and provisioning profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "$BUILD_CERTIFICATE_BASE64" | base64 -D > "$RUNNER_TEMP/certificate.p12"
+          echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 -D > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/testflight.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/testflight.keychain-db"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/testflight.keychain-db"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$RUNNER_TEMP/testflight.keychain-db"
+          security list-keychain -d user -s "$RUNNER_TEMP/testflight.keychain-db"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/testflight.keychain-db"
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          printf 'PROFILE_NAME=%s\n' "$PROFILE_NAME" >> "$GITHUB_ENV"
+
+      - name: Archive app for iPhone with Apple signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project BusinessDocumentSync.xcodeproj \
+            -scheme BusinessDocumentSync \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/BusinessDocumentSync.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+
+      - name: Export signed IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store-connect</string>
+          <key>destination</key><string>export</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>teamID</key><string>$APPLE_TEAM_ID</string>
+          <key>provisioningProfiles</key><dict>
+          <key>com.rooomtech.businessdocumentsync</key><string>$PROFILE_NAME</string>
+          </dict>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/BusinessDocumentSync.xcarchive" \
+            -exportPath "$RUNNER_TEMP/iphone-export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          test -s "$RUNNER_TEMP/iphone-export/BusinessDocumentSync.ipa"
+
+      - name: Upload signed app to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, json, os, pathlib
+          content = base64.b64decode(os.environ["ASC_API_KEY_BASE64"]).decode("utf-8")
+          key = {
+            "key_id": os.environ["ASC_KEY_ID"],
+            "issuer_id": os.environ["ASC_ISSUER_ID"],
+            "key": content
+          }
+          pathlib.Path(os.environ["RUNNER_TEMP"], "appstore-key.json").write_text(json.dumps(key))
+          PY
+          bundle exec fastlane pilot upload \
+            --ipa "$RUNNER_TEMP/iphone-export/BusinessDocumentSync.ipa" \
+            --api_key_path "$RUNNER_TEMP/appstore-key.json" \
+            --skip_submission \
+            --skip_waiting_for_build_processing
+          echo "Uploaded to App Store Connect. Assign the processed build to an internal tester in the TestFlight tab."
+
+      - name: Clean up local signing material
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/testflight.keychain-db" ]]; then
+            security delete-keychain "$RUNNER_TEMP/testflight.keychain-db" || true
+          fi
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/profile.mobileprovision" "$RUNNER_TEMP/profile.plist" "$RUNNER_TEMP/appstore-key.json"
+          rm -f Config/Secrets.xcconfig

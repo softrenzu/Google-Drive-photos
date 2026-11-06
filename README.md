@@ -1,6 +1,6 @@
 # BusinessDocumentSync / iPhone業務書類自動保存
 
-**iPhoneへインストールする場合は [TestFlightによる導入手順](docs/INSTALL_IPHONE.md) を参照してください。** GitHub内のコードやシミュレーター用ビルドを直接iPhoneへインストールすることはできません。Apple Developerによる署名と配布設定が必要です。
+**iPhoneへインストールする場合は [TestFlightによる導入手順](docs/INSTALL_IPHONE.md) を参照してください。GitHub Actionsのクラウド署名方式ならMacなしで配布できます。** GitHub内のコードやシミュレーター用ビルドを直接iPhoneへインストールすることはできません。Apple Developerによる署名と配布設定が必要です。
 
 
 無料で使える個人用iOSアプリ。既存の商用RooomShotとは独立したXcodeGenプロジェクトです。サブスクリプション、外部AI API、広告SDKはありません。
@@ -21,7 +21,8 @@
 ## 必要環境
 
 - iOS 17以上の実機iPhone
-- Xcode 26以降を実行できるMac（WindowsだけでiOSネイティブアプリの署名・インストールはできません）
+- GitHub Actions + TestFlightで配布する場合はMac不要（ただし有効なApple Developer Programの登録と署名用認証設定が必要）
+- Macから直接実機に導入する場合はXcode 26以降を使う
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 - Google Cloudプロジェクト、Google Drive APIを有効化したiOS OAuthクライアント
 - Apple ID / 端末署名（無料のPersonal Teamでは再署名等の制約あり）

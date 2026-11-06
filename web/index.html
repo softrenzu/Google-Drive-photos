@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#163e66">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="書類保存">
+  <meta name="apple-mobile-web-app-title" content="書類保存">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="180x180" href="./apple-touch-icon.png">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="iPhoneの写真から業務書類だけを端末内で選び、Google Driveに保存">
   <title>業務書類をDriveに保存</title>
@@ -16,9 +20,29 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
   <script defer src="./app.js"></script>
+  <script>
+    addEventListener("DOMContentLoaded", () => {
+      if (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) {
+        document.getElementById("install-card")?.setAttribute("hidden", "");
+      }
+    });
+  </script>
 </head>
 <body>
   <main class="shell">
+    <section class="install-card" id="install-card" aria-labelledby="install-heading">
+      <div class="install-heading">
+        <img src="./apple-touch-icon.png" alt="書類保存のアプリアイコン" width="54" height="54">
+        <div><h2 id="install-heading">ホーム画面にアプリを追加</h2><p>最初の1回だけ設定すれば、次からアイコンをタップして直接起動できます。</p></div>
+      </div>
+      <ol class="install-steps">
+        <li>iPhoneの <strong>Safari</strong> でこの画面を開く</li>
+        <li>Safariの <strong>共有（四角に上矢印）</strong> をタップ</li>
+        <li><strong>「ホーム画面に追加」</strong> を選ぶ</li>
+        <li><strong>「Webアプリとして開く」</strong> をオンにして <strong>「追加」</strong></li>
+      </ol>
+      <p class="install-confirm">以後はホーム画面の「書類保存」アイコンから起動できます。Safariの画面には戻りません。</p>
+    </section>
     <header class="hero">
       <div class="brand"><span class="brand-icon" aria-hidden="true">▤</span> ROOOMTECH <small>DOC SYNC</small></div>
       <h1>書類だけ、<br>Google Driveへ。</h1>

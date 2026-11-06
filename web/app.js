@@ -13,7 +13,7 @@
   const docWords=["請求書","領収書","見積書","契約書","納品書","発注書","請求明細","支払明細","経費精算","invoice","receipt","quotation","purchaseorder"];
   const contextWords=["合計","金額","税抜","税込","支払","振込","発行","円","御中","住所","明細","数量","単価","消費税","total","amount","date","tax"];
   const excluded=["マイナンバー","個人番号","運転免許証","パスポート","passport","在留カード","健康保険証","身分証明書","学生証","免許証"];
-  let oauth,token=null,expires=0,detector=null,ocr=null,entries=[],busy=false;
+  let oauth,token=null,expires=0,detector=null,faceDetector=null,ocr=null,entries=[],busy=false;
   ui.client.value=localStorage.getItem(clientStorage)||"";
   const say=message=>{ui.uploadStatus.textContent=message;};
   const progress=(msg,n,total)=>{
@@ -82,9 +82,10 @@
   }
 
   async function models(){
-    if(!window.Tesseract?.createWorker||!window.cocoSsd?.load||!window.tf)
+    if(!window.Tesseract?.createWorker||!window.cocoSsd?.load||!window.blazeface?.load||!window.tf)
       throw new Error("写真の安全判定ライブラリが読み込めません。通信を確認してください");
     if(!detector){progress("人物検出AIを読み込み中",0,1);detector=await cocoSsd.load({base:"lite_mobilenet_v2"});}
+    if(!faceDetector){progress("顔検出AIを読み込み中",0,1);faceDetector=await blazeface.load();}
     if(!ocr){progress("日本語の文字認識を読み込み中",0,1);ocr=await Tesseract.createWorker(["jpn","eng"],1);}
   }
 
@@ -93,6 +94,8 @@
     const predictions=await detector.detect(canvas,20,.15);
     if(predictions.some(x=>x.class==="person"&&x.score>=.15))
       return {ok:false,reason:"人物を検出したため除外"};
+    const faces=await faceDetector.estimateFaces(canvas,false);
+    if(faces.length)return {ok:false,reason:"顔写真を検出したため除外"};
     const result=await ocr.recognize(canvas);
     const data=result?.data||{},text=String(data.text||"").replace(/\s+/g,"").toLowerCase();
     const lines=(data.lines||[]).filter(x=>x.text?.trim()).length;

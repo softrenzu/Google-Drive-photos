@@ -1,0 +1,143 @@
+name: Publish to TestFlight with Apple Cloud Signing
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_distribution:
+        description: "Apple Developer and Google OAuth setup is complete"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: inputs.confirm_distribution
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: testflight
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+      - name: Install fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Validate required secrets
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in GOOGLE_CLIENT_ID GOOGLE_REVERSED_CLIENT_ID APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_API_KEY_BASE64; do
+            if [[ -z "${!key}" ]]; then
+              echo "::error title=Missing Secret::Set $key in GitHub Actions Secrets"
+              exit 1
+            fi
+          done
+
+      - name: Build project and configure credentials
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          swift scripts/generate_icon.swift
+          {
+            printf 'GOOGLE_CLIENT_ID = %s\n' "$GOOGLE_CLIENT_ID"
+            printf 'GOOGLE_REVERSED_CLIENT_ID = %s\n' "$GOOGLE_REVERSED_CLIENT_ID"
+            printf 'DEVELOPMENT_TEAM = %s\n' "$APPLE_TEAM_ID"
+          } > Config/Secrets.xcconfig
+          python3 - <<'PY'
+          import os, base64, json
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"])
+          pem = base64.b64decode(os.environ["ASC_API_KEY_BASE64"]).decode("utf-8")
+          (p / "apple-key.p8").write_text(pem, encoding="utf-8")
+          (p / "appstore-key.json").write_text(json.dumps({
+            "key_id": os.environ["ASC_KEY_ID"],
+            "issuer_id": os.environ["ASC_ISSUER_ID"],
+            "key": pem
+          }), encoding="utf-8")
+          PY
+          xcodegen generate
+
+      - name: Archive iPhone app using Apple cloud signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project BusinessDocumentSync.xcodeproj \
+            -scheme BusinessDocumentSync \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/BusinessDocumentSync.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/apple-key.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+
+      - name: Export distributable signed IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/BusinessDocumentSync.xcarchive" \
+            -exportPath "$RUNNER_TEMP/iphone-export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/apple-key.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          test -s "$RUNNER_TEMP/iphone-export/BusinessDocumentSync.ipa"
+
+      - name: Send to TestFlight via App Store Connect
+        run: |
+          set -euo pipefail
+          bundle exec fastlane pilot upload \
+            --ipa "$RUNNER_TEMP/iphone-export/BusinessDocumentSync.ipa" \
+            --api_key_path "$RUNNER_TEMP/appstore-key.json" \
+            --skip_submission \
+            --skip_waiting_for_build_processing
+          echo "Upload finished. Open App Store Connect > TestFlight to enable internal testing."
+
+      - name: Remove local authentication material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/apple-key.p8" "$RUNNER_TEMP/appstore-key.json" Config/Secrets.xcconfig

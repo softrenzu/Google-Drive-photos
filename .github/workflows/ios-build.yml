@@ -7,12 +7,14 @@ on:
       - "App/**"
       - "Config/**"
       - "project.yml"
+      - "scripts/**"
       - ".github/workflows/ios-build.yml"
   pull_request:
     paths:
       - "App/**"
       - "Config/**"
       - "project.yml"
+      - "scripts/**"
       - ".github/workflows/ios-build.yml"
   workflow_dispatch:
 
@@ -29,8 +31,10 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
       - name: Install XcodeGen
         run: brew install xcodegen
-      - name: Generate independent project
-        run: xcodegen generate
+      - name: Create icon and generate project
+        run: |
+          swift scripts/generate_icon.swift
+          xcodegen generate
       - name: Build app for iPhone Simulator without signing
         run: |
           xcodebuild build -project BusinessDocumentSync.xcodeproj -scheme BusinessDocumentSync -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO

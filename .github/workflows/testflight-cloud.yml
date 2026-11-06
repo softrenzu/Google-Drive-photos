@@ -31,7 +31,6 @@ jobs:
       - name: Validate required secrets
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -39,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for key in GOOGLE_CLIENT_ID GOOGLE_REVERSED_CLIENT_ID APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_API_KEY_BASE64; do
+          for key in GOOGLE_CLIENT_ID APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_API_KEY_BASE64; do
             if [[ -z "${!key}" ]]; then
               echo "::error title=Missing Secret::Set $key in GitHub Actions Secrets"
               exit 1
@@ -49,7 +48,6 @@ jobs:
       - name: Build project and configure credentials
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_REVERSED_CLIENT_ID: ${{ secrets.GOOGLE_REVERSED_CLIENT_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -58,6 +56,11 @@ jobs:
           set -euo pipefail
           brew install xcodegen
           swift scripts/generate_icon.swift
+          if [[ "$GOOGLE_CLIENT_ID" != *.apps.googleusercontent.com ]]; then
+            echo "::error::Invalid Google iOS OAuth client ID"
+            exit 1
+          fi
+          GOOGLE_REVERSED_CLIENT_ID="com.googleusercontent.apps.${GOOGLE_CLIENT_ID%.apps.googleusercontent.com}"
           {
             printf 'GOOGLE_CLIENT_ID = %s\n' "$GOOGLE_CLIENT_ID"
             printf 'GOOGLE_REVERSED_CLIENT_ID = %s\n' "$GOOGLE_REVERSED_CLIENT_ID"

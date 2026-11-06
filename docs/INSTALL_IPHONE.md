@@ -18,18 +18,17 @@ App Storeの一般公開は必要ありません。自分のiPhoneへ導入す�
 
 1. [Apple Developer](https://developer.apple.com/account/resources/identifiers/list) でBundle ID `com.rooomtech.businessdocumentsync` を登録し、[App Store Connect](https://appstoreconnect.apple.com/apps) で同じBundle IDのアプリを作る。
 2. [Google Cloud Console](https://console.cloud.google.com/apis/credentials)でGoogle Drive APIを有効化し、iOS OAuthクライアント（同じBundle ID）を作る。OAuthスコープは`drive.file`。個人用途でOAuthがテスト状態なら、使用Googleアカウントをテストユーザーに入れる。
-3. [このリポジトリのActions Secrets](https://github.com/softrenzu/Google-Drive-photos/settings/secrets/actions)に以下6件を設定する：
+3. [このリポジトリのActions Secrets](https://github.com/softrenzu/Google-Drive-photos/settings/secrets/actions)に以下5件を設定する：
 
 | GitHub Secret | 値 |
 |---|---|
 | `GOOGLE_CLIENT_ID` | iOS OAuthクライアントID |
-| `GOOGLE_REVERSED_CLIENT_ID` | 逆順クライアントID |
 | `APPLE_TEAM_ID` | Apple Developer Team ID |
 | `ASC_KEY_ID` | App Store Connect APIのKey ID |
 | `ASC_ISSUER_ID` | App Store Connect APIのIssuer ID |
 | `ASC_API_KEY_BASE64` | .p8秘密鍵をBase64エンコードした文字列 |
 
-4. [**Publish to TestFlight with Apple Cloud Signing**](https://github.com/softrenzu/Google-Drive-photos/actions/workflows/testflight-cloud.yml)で「Run workflow」を押し、`confirm_distribution`をONにする。APIキーにはApple Developerの署名管理に必要な権限が必要。クラウド署名が許可されないアカウントでは、下記の手動署名方式を使う。
+4. 逆順Google OAuthクライアントIDはビルド時に自動算出されます。[**Publish to TestFlight with Apple Cloud Signing**](https://github.com/softrenzu/Google-Drive-photos/actions/workflows/testflight-cloud.yml)で「Run workflow」を押し、`confirm_distribution`をONにする。APIキーにはApple Developerの署名管理に必要な権限が必要。クラウド署名が許可されないアカウントでは、下記の手動署名方式を使う。
 5. [App Store Connect > TestFlight](https://appstoreconnect.apple.com/apps)で処理済みビルドを内部テストグループへ割り当て、本人のApple IDをテスターに追加する。
 6. iPhoneに[無料のTestFlight](https://apps.apple.com/jp/app/testflight/id899247664)を入れ、招待リンクから「承諾」→「インストール」。
 
